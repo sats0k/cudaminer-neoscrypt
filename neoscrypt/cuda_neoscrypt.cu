@@ -4524,9 +4524,9 @@ void salsa_core_mode3(uint *Y) {
     "}" : "+r"(Y[0]), "+r"(Y[1]), "+r"(Y[2]), "+r"(Y[3])
         : "r"(c7), "r"(c9), "r"(c13), "r"(c18));
 
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[1]) : "r"(threadIdx.x + 3), "r"(exch));
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[2]) : "r"(threadIdx.x + 2), "r"(exch));
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[3]) : "r"(threadIdx.x + 1), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[1]) : "r"(threadIdx.x + 3), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[2]) : "r"(threadIdx.x + 2), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[3]) : "r"(threadIdx.x + 1), "r"(exch));
 
     asm("{\n"
       ".reg .u32 t;\n"
@@ -4545,9 +4545,9 @@ void salsa_core_mode3(uint *Y) {
     "}" : "+r"(Y[0]), "+r"(Y[3]), "+r"(Y[2]), "+r"(Y[1])
         : "r"(c7), "r"(c9), "r"(c13), "r"(c18));
 
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[1]) : "r"(threadIdx.x + 1), "r"(exch));
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[2]) : "r"(threadIdx.x + 2), "r"(exch));
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[3]) : "r"(threadIdx.x + 3), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[1]) : "r"(threadIdx.x + 1), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[2]) : "r"(threadIdx.x + 2), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[3]) : "r"(threadIdx.x + 3), "r"(exch));
 }
 
 static __device__ __forceinline__
@@ -4570,9 +4570,9 @@ void chacha_core_mode3(uint *Y) {
     "}" : "+r"(Y[0]), "+r"(Y[1]), "+r"(Y[2]), "+r"(Y[3])
         : "r"(c7), "r"(c8), "r"(c12), "r"(c16), "r"(c0));
 
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[1]) : "r"(threadIdx.x + 1), "r"(exch));
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[2]) : "r"(threadIdx.x + 2), "r"(exch));
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[3]) : "r"(threadIdx.x + 3), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[1]) : "r"(threadIdx.x + 1), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[2]) : "r"(threadIdx.x + 2), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[3]) : "r"(threadIdx.x + 3), "r"(exch));
 
     asm("{\n"
       "add.u32 %0, %0, %1;\n"
@@ -4590,9 +4590,9 @@ void chacha_core_mode3(uint *Y) {
     "}" : "+r"(Y[0]), "+r"(Y[1]), "+r"(Y[2]), "+r"(Y[3])
         : "r"(c7), "r"(c8), "r"(c12), "r"(c16), "r"(c0));
 
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[1]) : "r"(threadIdx.x + 3), "r"(exch));
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[2]) : "r"(threadIdx.x + 2), "r"(exch));
-   asm("shfl.idx.b32 %0, %0, %1, %2;" : "+r"(Y[3]) : "r"(threadIdx.x + 1), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[1]) : "r"(threadIdx.x + 3), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[2]) : "r"(threadIdx.x + 2), "r"(exch));
+   asm("shfl.sync.idx.b32 %0, %0, %1, %2, 0xffffffff;" : "+r"(Y[3]) : "r"(threadIdx.x + 1), "r"(exch));
 }
 
 
@@ -5087,7 +5087,7 @@ void neoscrypt_gpu_hash_salsa_mode3() {
 
     for(i = 0; i < 128; i++) {
         uint offset;
-    asm("shfl.idx.b32 %0, %1, 0, 0x1C1F;" : "=r"(offset) : "r"(X[12]));
+    asm("shfl.sync.idx.b32 %0, %1, 0, 0x1C1F, 0xffffffff;" : "=r"(offset) : "r"(X[12]));
         offset = shift + (offset & 0x7F) * 8;
         for(j = 0; j < 4; j++)
           ((uint4 *) X)[j] ^= ((uint4 *) (G + offset))[j * 4 + threadIdx.x];
@@ -5135,7 +5135,7 @@ void neoscrypt_gpu_hash_chacha_mode3() {
 
     for(i = 0; i < 128; i++) {
         uint offset;
-    asm("shfl.idx.b32 %0, %1, 0, 7199;" : "=r"(offset) : "r"(X[12]));
+    asm("shfl.sync.idx.b32 %0, %1, 0, 7199, 0xffffffff;" : "=r"(offset) : "r"(X[12]));
         offset = shift + (offset & 0x7F) * 8;
         for(j = 0; j < 4; j++)
           ((uint4 *) X)[j] ^= ((uint4 *) (G + offset))[j * 4 + threadIdx.x];

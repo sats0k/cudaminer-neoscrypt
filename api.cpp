@@ -807,10 +807,11 @@ static void api()
 				buf[0] = '\0';
 			else if (n > 0 && buf[n-1] == '\n') {
 				/* telnet compat \r\n */
-				buf[n-1] = '\0'; n--;
+				buf[n-1] = '\0';
 				if (n > 0 && buf[n-1] == '\r')
 					buf[n-1] = '\0';
 			}
+			if (!fail)
 			buf[n] = '\0';
 
 			//if (opt_debug && opt_protocol && n > 0)
