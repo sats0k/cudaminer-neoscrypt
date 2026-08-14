@@ -10,16 +10,27 @@ Requires the cURL library for network communication
 
 The current Linux build is tested with CUDA 12.8 and GCC 16.1.
 
-When using CUDA 12.8 with GCC 16, two declarations in
-`math_functions.h` need to be adjusted for exception-specification
-compatibility.
+The CUDA 12.8 installation used for development was obtained from the
+Arch Linux Archive (ALA). It may differ from the current CUDA packages
+available from the distribution or from the official NVIDIA CUDA
+toolkit.
 
-The only modification required to the CUDA toolkit is the following
-change to:
+When compiling with GCC 16, the following two declarations in
+`math_functions.h` need to be changed:
 
     /opt/cuda/include/crt/math_functions.h
 
-Apply:
+From:
+
+    double                 rsqrt(double x);
+    float                  rsqrtf(float x);
+
+To:
+
+    double                 rsqrt(double x) noexcept (true);
+    float                  rsqrtf(float x) noexcept (true);
+
+The changes can be applied with:
 
     sudo sed -i \
       's/double                 rsqrt(double x);/double                 rsqrt(double x) noexcept (true);/' \
@@ -29,21 +40,13 @@ Apply:
       's/float                  rsqrtf(float x);/float                  rsqrtf(float x) noexcept (true);/' \
       /opt/cuda/include/crt/math_functions.h
 
-Or, equivalently, change:
+No other CUDA files are known to require modification.
 
-    double                 rsqrt(double x);
-    float                  rsqrtf(float x);
-
-to:
-
-    double                 rsqrt(double x) noexcept (true);
-    float                  rsqrtf(float x) noexcept (true);
-
-No CUDA libraries or binaries need to be modified. Only
-`math_functions.h` is patched.
-
-This patch is required for the current GCC 16 build environment and
-is not a modification to the CUDA runtime or NVIDIA driver.
+The exact provenance and contents of the archived CUDA 12.8 package
+used during development are not independently verified here. The
+above `math_functions.h` changes are therefore documented as the
+compatibility changes required by this build environment, rather than
+as modifications made by the CUDA package itself.
 
 ### Build Requirements
 
