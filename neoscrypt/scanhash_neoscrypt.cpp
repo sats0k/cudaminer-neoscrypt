@@ -17,6 +17,8 @@ static uint *gmem[MAX_GPUS];
 static uint *hash0[MAX_GPUS];
 static uint *hash1[MAX_GPUS];
 static uint *hash2[MAX_GPUS];
+static uint cached_throughput[MAX_GPUS];
+static uint cached_hash_mode[MAX_GPUS];
 
 extern void neoscrypt_init(uint thr_id, uint *gmem,
   uint *hash0, uint *hash1, uint *hash2);
@@ -31,103 +33,107 @@ extern "C" int scanhash_neoscrypt(int thr_id, uint *pdata, const uint *ptarget,
     if(opt_benchmark)
       ((uint *) ptarget)[7] = 0x01FF;
 
-    uint intensity = 1, throughput = 0;
-    cudaDeviceProp props;
-    cudaGetDeviceProperties(&props, device_map[thr_id]);
-    if(strstr(props.name, "TITAN Xp")) {
-        throughput = 30 * 128 * 32;
-        if(!hash_mode) hash_mode = 3;
-    }
-    else if(strstr(props.name, "1080 Ti")) {
-        throughput = 28 * 128 * 32;
-        if(!hash_mode) hash_mode = 3;
-    }
-    else if(strstr(props.name, "1080")) {
-        throughput = 20 * 128 * 32;
-        if(!hash_mode) hash_mode = 3;
-    }
-    else if(strstr(props.name, "1070 Ti")) {
-        throughput = 19 * 128 * 32;
-        if(!hash_mode) hash_mode = 3;
-    }
-    else if(strstr(props.name, "1070")) {
-        throughput = 15 * 128 * 64;
-        if(!hash_mode) hash_mode = 2;
-    }
-    else if(strstr(props.name, "1060 6GB")) {
-        throughput = 10 * 128 * 64;
-        if(!hash_mode) hash_mode = 2;
-    }
-    else if(strstr(props.name, "1060 3GB")) {
-        throughput = 9 * 128 * 32;
-        if(!hash_mode) hash_mode = 2;
-    }
-    else if(strstr(props.name, "TITAN X")) {
-        throughput = 24 * 128 * 32;
-        if(!hash_mode) hash_mode = 3;
-    }
-    else if(strstr(props.name, "980 Ti")) {
-        throughput = 22 * 128 * 32;
-        if(!hash_mode) hash_mode = 3;
-    }
-    else if(strstr(props.name, "980")) {
-        throughput = 16 * 128 * 32;
-        if(!hash_mode) hash_mode = 1;
-    }
-    else if(strstr(props.name, "970")) {
-        throughput = 13 * 128 * 32;
-        if(!hash_mode) hash_mode = 1;
-    }
-    else if(strstr(props.name, "960")) {
-        throughput = 8 * 128 * 32;
-        if(!hash_mode) hash_mode = 1;
-    }
-    else if(strstr(props.name, "950")) {
-        throughput = 6 * 128 * 64;
-        if(!hash_mode) hash_mode = 1;
-    }
-    else if(strstr(props.name, "750 Ti")) {
-        throughput = 5 * 128 * 64;
-        if(!hash_mode) hash_mode = 1;
-    }
-    else if(strstr(props.name, "750")) {
-        throughput = 4 * 128 * 64;
-        if(!hash_mode) hash_mode = 1;
-    }
-    else if(strstr(props.name, "TITAN Z")) {
-        throughput = 15 * 192 * 32;
-        if(!hash_mode) hash_mode = 1;
-    }
-    else if(strstr(props.name, "TITAN Black")) {
-        throughput = 15 * 192 * 32;
-        if(!hash_mode) hash_mode = 1;
-    }
-    else if(strstr(props.name, "TITAN")) {
-        throughput = 14 * 192 * 32;
-        if(!hash_mode) hash_mode = 1;
-    }
-    else if(strstr(props.name, "780 Ti")) {
-        throughput = 15 * 192 * 16;
-        if(!hash_mode) hash_mode = 1;
-    }
-    else if(strstr(props.name, "780")) {
-        throughput = 12 * 192 * 16;
-        if(!hash_mode) hash_mode = 1;
-    }
-    else
-      intensity = 14;
-
-    if(!throughput) throughput = 1U << intensity;
-
-#if defined(_WIN32) && !defined(_WIN64)
-    if(throughput > 49152) throughput = 49152;
-#endif
-
-    throughput = device_intensity(device_map[thr_id], __func__, throughput) / 2;
-
     static bool init[MAX_GPUS] = { 0 };
 
     if(!init[thr_id]) {
+        uint intensity = 1, throughput = 0;
+        uint default_hash_mode = 0;
+        cudaDeviceProp props;
+        cudaGetDeviceProperties(&props, device_map[thr_id]);
+        if(strstr(props.name, "TITAN Xp")) {
+            throughput = 30 * 128 * 32;
+            default_hash_mode = 3;
+        }
+        else if(strstr(props.name, "1080 Ti")) {
+            throughput = 28 * 128 * 32;
+            default_hash_mode = 3;
+        }
+        else if(strstr(props.name, "1080")) {
+            throughput = 20 * 128 * 32;
+            default_hash_mode = 3;
+        }
+        else if(strstr(props.name, "1070 Ti")) {
+            throughput = 19 * 128 * 32;
+            default_hash_mode = 3;
+        }
+        else if(strstr(props.name, "1070")) {
+            throughput = 15 * 128 * 64;
+            default_hash_mode = 2;
+        }
+        else if(strstr(props.name, "1060 6GB")) {
+            throughput = 10 * 128 * 64;
+            default_hash_mode = 2;
+        }
+        else if(strstr(props.name, "1060 3GB")) {
+            throughput = 9 * 128 * 32;
+            default_hash_mode = 2;
+        }
+        else if(strstr(props.name, "TITAN X")) {
+            throughput = 24 * 128 * 32;
+            default_hash_mode = 3;
+        }
+        else if(strstr(props.name, "980 Ti")) {
+            throughput = 22 * 128 * 32;
+            default_hash_mode = 3;
+        }
+        else if(strstr(props.name, "980")) {
+            throughput = 16 * 128 * 32;
+            default_hash_mode = 1;
+        }
+        else if(strstr(props.name, "970")) {
+            throughput = 13 * 128 * 32;
+            default_hash_mode = 1;
+        }
+        else if(strstr(props.name, "960")) {
+            throughput = 8 * 128 * 32;
+            default_hash_mode = 1;
+        }
+        else if(strstr(props.name, "950")) {
+            throughput = 6 * 128 * 64;
+            default_hash_mode = 1;
+        }
+        else if(strstr(props.name, "750 Ti")) {
+            throughput = 5 * 128 * 64;
+            default_hash_mode = 1;
+        }
+        else if(strstr(props.name, "750")) {
+            throughput = 4 * 128 * 64;
+            default_hash_mode = 1;
+        }
+        else if(strstr(props.name, "TITAN Z")) {
+            throughput = 15 * 192 * 32;
+            default_hash_mode = 1;
+        }
+        else if(strstr(props.name, "TITAN Black")) {
+            throughput = 15 * 192 * 32;
+            default_hash_mode = 1;
+        }
+        else if(strstr(props.name, "TITAN")) {
+            throughput = 14 * 192 * 32;
+            default_hash_mode = 1;
+        }
+        else if(strstr(props.name, "780 Ti")) {
+            throughput = 15 * 192 * 16;
+            default_hash_mode = 1;
+        }
+        else if(strstr(props.name, "780")) {
+            throughput = 12 * 192 * 16;
+            default_hash_mode = 1;
+        }
+        else
+          intensity = 14;
+
+        if(!throughput) throughput = 1U << intensity;
+
+#if defined(_WIN32) && !defined(_WIN64)
+        if(throughput > 49152) throughput = 49152;
+#endif
+
+        throughput = device_intensity(device_map[thr_id], __func__, throughput) / 2;
+
+        cached_throughput[thr_id] = throughput;
+        cached_hash_mode[thr_id] = default_hash_mode;
+
         cudaSetDevice(device_map[thr_id]);
         cudaDeviceReset();
         cudaSetDeviceFlags(cudaDeviceScheduleBlockingSync);
@@ -147,6 +153,9 @@ extern "C" int scanhash_neoscrypt(int thr_id, uint *pdata, const uint *ptarget,
 
         init[thr_id] = true;
     }
+
+    uint throughput = cached_throughput[thr_id];
+    if(!hash_mode) hash_mode = cached_hash_mode[thr_id];
 
     /* Input data must be little endian already */
 

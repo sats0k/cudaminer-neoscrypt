@@ -13,14 +13,14 @@ rm -f config.status
 WARN="-Wno-deprecated-gpu-targets"
 
 # Optimisation flags
-OPT="-O2 -fomit-frame-pointer -fno-stack-protector"
+OPT="-O3 -fomit-frame-pointer -fno-stack-protector"
 
 FLAGS="-march=native -falign-functions=16 \
        -falign-jumps=16 -falign-labels=16"
 
 env \
     CUDA_CFLAGS="-O3 -Xcompiler -Wall -D_FORCE_INLINES $WARN" \
-    CFLAGS="-O3 -fomit-frame-pointer $FLAGS" \
+    CFLAGS="$OPT $FLAGS" \
     CXXFLAGS="$OPT $FLAGS" \
     ./configure --with-cuda=/opt/cuda --with-nvml=libnvidia-ml.so
 
