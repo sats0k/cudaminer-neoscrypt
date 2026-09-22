@@ -339,11 +339,12 @@ json_t *json_rpc_call(CURL *curl, const char *url,
 	upload_data.buf = rpc_req;
 	upload_data.len = strlen(rpc_req);
 	upload_data.pos = 0;
+	if (upload_data.len)
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long) upload_data.len);
 	sprintf(len_hdr, "Content-Length: %lu", (unsigned long) upload_data.len);
 	sprintf(hashrate_hdr, "X-Mining-Hashrate: %llu", (unsigned long long) global_hashrate);
 
 	headers = curl_slist_append(headers, "Content-Type: application/json");
-	headers = curl_slist_append(headers, len_hdr);
 	headers = curl_slist_append(headers, "User-Agent: " USER_AGENT);
 	headers = curl_slist_append(headers, "X-Mining-Extensions: longpoll noncerange reject-reason");
 	headers = curl_slist_append(headers, hashrate_hdr);
